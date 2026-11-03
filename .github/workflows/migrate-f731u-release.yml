@@ -83,9 +83,12 @@ jobs:
           git fetch origin device/f731u
           git cat-file -e "$source_commit^{commit}"
           git merge-base --is-ancestor "$source_commit" origin/device/f731u
-          git tag "$destination_tag" "$source_commit"
-          git push origin "refs/tags/$destination_tag"
+          # GitHub Actions GITHUB_TOKEN cannot create a release tag pointing to a
+          # commit whose workflow files differ from the default branch.
+          # The original source commit is verified above; the APK is byte-for-byte
+          # copied. The release tag itself points to main (release metadata).
+          # Do not attempt to push the original source commit as a new tag.
           mapfile -t apks < <(find release-audit -maxdepth 1 -name '*.apk' -type f -print)
           gh release create "$destination_tag" "${apks[@]}" release-audit/SHA256SUMS \
-            --repo "$GITHUB_REPOSITORY" --title "F731U v0.2.36" \
-            --notes "Original F731U v0.2.36-f731u APK assets migrated byte-for-byte from youyoudezhuzhu/rmg-f731u. Supported firmware: F731USQS8GZF1. See SHA256SUMS."
+            --repo "$GITHUB_REPOSITORY" --target main --title "F731U v0.2.36" \
+            --notes "Original F731U v0.2.36-f731u APK assets migrated byte-for-byte from youyoudezhuzhu/rmg-f731u. Original source commit: $source_commit (preserved in device/f731u history). The release tag points to main for GitHub Actions permission compatibility, not to the APK source snapshot. Supported firmware: F731USQS8GZF1. See SHA256SUMS."

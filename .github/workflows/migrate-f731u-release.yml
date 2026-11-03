@@ -34,8 +34,8 @@ jobs:
             "https://api.github.com/repos/youyoudezhuzhu/rmg-f731u/releases/latest" > release-audit/source-release.json
           tag="$(jq -r '.tag_name' release-audit/source-release.json)"
           echo "Latest source release: $tag"
-          if [[ "$tag" != "v0.2.36" ]]; then
-            echo "::error::Source latest release differs from expected v0.2.36. Refusing migration."
+          if [[ "$tag" != "v0.2.36-f731u" ]]; then
+            echo "::error::Source latest release differs from expected v0.2.36-f731u. Refusing migration."
             exit 1
           fi
           mapfile -t assets < <(jq -r '.assets[] | select(.name | ascii_downcase | endswith(".apk")) | [.id,.name,.size] | @tsv' release-audit/source-release.json)
@@ -64,7 +64,7 @@ jobs:
             echo "Audit only: no tag or release created."
             exit 0
           fi
-          destination_tag="f731u-v0.2.36"
+          destination_tag="f731u-v0.2.36-f731u"
           if gh release view "$destination_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::error::Destination release already exists; refusing overwrite."
             exit 1
@@ -72,7 +72,7 @@ jobs:
           source_commit="$(jq -r '.target_commitish' release-audit/source-release.json)"
           # Resolve the original tag directly rather than trusting target_commitish (which can be 'main').
           curl -fsSL -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/youyoudezhuzhu/rmg-f731u/git/ref/tags/v0.2.36" > release-audit/source-tag.json
+            "https://api.github.com/repos/youyoudezhuzhu/rmg-f731u/git/ref/tags/v0.2.36-f731u" > release-audit/source-tag.json
           source_commit="$(jq -r '.object.sha' release-audit/source-tag.json)"
           object_type="$(jq -r '.object.type' release-audit/source-tag.json)"
           if [[ "$object_type" == "tag" ]]; then
@@ -87,5 +87,5 @@ jobs:
           git push origin "refs/tags/$destination_tag"
           mapfile -t apks < <(find release-audit -maxdepth 1 -name '*.apk' -type f -print)
           gh release create "$destination_tag" "${apks[@]}" release-audit/SHA256SUMS \
-            --repo "$GITHUB_REPOSITORY" --title "F731U v0.2.36" \
-            --notes "Original F731U v0.2.36 APK assets migrated byte-for-byte from youyoudezhuzhu/rmg-f731u. Supported firmware: F731USQS8GZF1. See SHA256SUMS."
+            --repo "$GITHUB_REPOSITORY" --title "F731U v0.2.36-f731u" \
+            --notes "Original F731U v0.2.36-f731u APK assets migrated byte-for-byte from youyoudezhuzhu/rmg-f731u. Supported firmware: F731USQS8GZF1. See SHA256SUMS."

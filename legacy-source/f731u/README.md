@@ -15,7 +15,7 @@ Root-My-Galaxy 移植版，内置支持 **SM-F731U/DS**（Z Flip 5 美版 T-Mobi
 | v0.2.35 | ✅ | 修复更新检查误报（AppUpdater 指向本仓库） |
 | v0.2.34 | ✅ 首次成功 | Shizuku 分支补 P0 env → temporary-root-ready 零重启 |
 
-下载：https://github.com/youyoudezhuzhu/rmg-f731u/releases
+下载：https://github.com/youyoudezhuzhu/Root-My-Galaxy-Devices/releases
 
 ## 📁 仓库结构
 
@@ -27,16 +27,16 @@ Root-My-Galaxy 移植版，内置支持 **SM-F731U/DS**（Z Flip 5 美版 T-Mobi
 - `artifacts/f731u-F731USQS8GZF1/` — 同款 payload（与 assets 同步，md5 一致）——**同机型直接引用此文件**
 - `support/` — targets-v3.json + payload（与 artifacts 同步）
 - `kernelsu/` — KernelSU 模块与 ksud
-- `.github/workflows/build-apk.yml` — GitHub Actions 云端编译
+- 仓库根目录 `.github/workflows/build-f731u-apk.yml` — GitHub Actions 云端编译
 
 ## 🎯 同机型（SM-F731U/DS, 固件 F731USQS8GZF1）直接引用方法
 
 ```
 # exploit payload（CVE-2026-43499, F731U BTF 偏移已打）
-curl -LO https://raw.githubusercontent.com/youyoudezhuzhu/rmg-f731u/main/artifacts/f731u-F731USQS8GZF1/cve-2026-43499-app.so
+curl -LO https://raw.githubusercontent.com/youyoudezhuzhu/Root-My-Galaxy-Devices/device/f731u/legacy-source/f731u/artifacts/f731u-F731USQS8GZF1/cve-2026-43499-app.so
 
 # 设备支持清单
-curl -LO https://raw.githubusercontent.com/youyoudezhuzhu/rmg-f731u/main/support/targets-v3.json
+curl -LO https://raw.githubusercontent.com/youyoudezhuzhu/Root-My-Galaxy-Devices/device/f731u/legacy-source/f731u/support/targets-v3.json
 ```
 
 其他机型：参照 `app-src/app/src/main/assets/targets-v3.json` 格式新增 profile，
@@ -44,10 +44,10 @@ payload 需按目标机型 BTF 重新计算偏移（见 `app-src/app/src/main/cp
 
 ## 🔧 构建 APK
 
-1. **自动**：push 到 main 分支自动触发 GitHub Actions
+1. **自动**：当前 workflow 仅支持手动触发
 2. **手动**：仓库 → Actions → Build F731U APK → Run workflow
 
-产物在 Actions 的 `rmg-f731u-apk` artifact 下载（保留 14 天）。
+产物在 Actions 的 `root-my-galaxy-f731u-debug` artifact 下载（保留 14 天）。
 
 ## 📄 产物来源
 

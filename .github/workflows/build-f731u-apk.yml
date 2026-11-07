@@ -1,0 +1,58 @@
+name: Build F731U APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout device/f731u
+        uses: actions/checkout@v4
+        with:
+          ref: device/f731u
+
+      - name: Verify imported source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f legacy-source/f731u/app-src/settings.gradle.kts
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
+      - name: Install NDK 28
+        shell: bash
+        run: |
+          sdkmanager "ndk;28.2.13612045" > /dev/null 2>&1 \
+            || sdkmanager "ndk;28.1.14206865" > /dev/null 2>&1 \
+            || echo "NDK installed via fallback"
+
+      - name: Build debug APK
+        shell: bash
+        working-directory: legacy-source/f731u/app-src
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: root-my-galaxy-f731u-debug
+          path: legacy-source/f731u/app-src/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

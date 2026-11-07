@@ -1,0 +1,73 @@
+name: Build device APKs
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: Device branch to build
+        type: choice
+        required: true
+        options: [f731u, t870]
+permissions:
+  contents: read
+  actions: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout selected device history
+        uses: actions/checkout@v4
+        with:
+          ref: device/${{ inputs.device }}
+      - name: Prepare device source at workspace root
+        env:
+          DEVICE: ${{ inputs.device }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir="legacy-source/$DEVICE"
+          test -f "$source_dir/app-src/settings.gradle.kts"
+          # Work on a temporary build copy. Never modify imported history.
+          mkdir -p "$RUNNER_TEMP/device-src"
+          cp -a "$source_dir/." "$RUNNER_TEMP/device-src/"
+          echo "DEVICE_SRC=$RUNNER_TEMP/device-src" >> "$GITHUB_ENV"
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install F731U NDK
+        if: inputs.device == 'f731u'
+        shell: bash
+        run: |
+          sdkmanager "ndk;28.2.13612045" || sdkmanager "ndk;28.1.14206865"
+      - name: Prepare T870 exploit build
+        if: inputs.device == 't870'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/BuSung-dev/Root-My-Galaxy-Payloads.git "$RUNNER_TEMP/rmg-src"
+          mkdir -p "$RUNNER_TEMP/rmg-src/src/targets/t870-T870XXS8DXH1"
+          cp "$DEVICE_SRC/patches/t870-target-fixed.h" "$RUNNER_TEMP/rmg-src/src/targets/t870-T870XXS8DXH1/target.h"
+          cp "$DEVICE_SRC/patches/t870-p0-fingerprint.h" "$RUNNER_TEMP/rmg-src/src/targets/t870-T870XXS8DXH1/p0_fingerprint.h"
+          curl -fL --retry 3 -o "$RUNNER_TEMP/ondk.tar.xz" "https://github.com/topjohnwu/ondk/releases/download/r30.1/ondk-r30.1-linux.tar.xz"
+          mkdir -p "$RUNNER_TEMP/ondk"
+          tar -C "$RUNNER_TEMP/ondk" --strip-components=1 -xf "$RUNNER_TEMP/ondk.tar.xz"
+          cd "$RUNNER_TEMP/rmg-src"
+          ANDROID_NDK_HOME="$RUNNER_TEMP/ondk" NDK_ROOT="$RUNNER_TEMP/ondk" make TARGET=t870-T870XXS8DXH1
+          cp "build/t870-T870XXS8DXH1/cve-2026-43499-app.so" "$DEVICE_SRC/app-src/app/src/main/assets/cve-2026-43499-app.so"
+      - name: Build debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$DEVICE_SRC/app-src"
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon
+      - name: Upload APK as temporary Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: root-my-galaxy-${{ inputs.device }}-debug
+          path: ${{ env.DEVICE_SRC }}/app-src/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
